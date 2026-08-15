@@ -1,65 +1,96 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+import { StyleSheet } from 'react-native';
 
-import '@/global.css';
+export const COLORS = {
+  // Dark background palette
+  bg0: '#07070E',
+  bg1: '#0D0D1C',
+  bg2: '#12122B',
+  bg3: '#1A1A35',
 
-import { Platform } from 'react-native';
+  // Violet accent
+  violet: '#7C3AED',
+  violetLight: '#A855F7',
+  violetGlow: 'rgba(124, 58, 237, 0.3)',
 
-export const Colors = {
-  light: {
-    text: '#000000',
-    background: '#ffffff',
-    backgroundElement: '#F0F0F3',
-    backgroundSelected: '#E0E1E6',
-    textSecondary: '#60646C',
+  // Cyan accent
+  cyan: '#06B6D4',
+  cyanLight: '#22D3EE',
+  cyanGlow: 'rgba(6, 182, 212, 0.25)',
+
+  // Text
+  textPrimary: '#F1F1FA',
+  textSecondary: '#8B8BA8',
+  textMuted: '#4B4B6B',
+
+  // Glass UI
+  glassBg: 'rgba(255,255,255,0.05)',
+  glassBorder: 'rgba(255,255,255,0.1)',
+  glassHighlight: 'rgba(255,255,255,0.08)',
+
+  // Status
+  success: '#10B981',
+  error: '#EF4444',
+  warning: '#F59E0B',
+
+  // Gradient arrays (for LinearGradient)
+  gradientViolet: ['#7C3AED', '#A855F7'],
+  gradientCyan: ['#06B6D4', '#7C3AED'],
+  gradientDark: ['#0D0D1C', '#1A1A35'],
+  gradientCard: ['rgba(124,58,237,0.15)', 'rgba(6,182,212,0.08)'],
+};
+
+export const FONTS = {
+  regular: undefined, // system font
+  bold: undefined,
+  weight: {
+    normal: '400' as const,
+    medium: '500' as const,
+    semibold: '600' as const,
+    bold: '700' as const,
+    extrabold: '800' as const,
   },
-  dark: {
-    text: '#ffffff',
-    background: '#000000',
-    backgroundElement: '#212225',
-    backgroundSelected: '#2E3135',
-    textSecondary: '#B0B4BA',
-  },
-} as const;
+};
 
-export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
+export const SPACING = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+};
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+export const RADIUS = {
+  sm: 8,
+  md: 12,
+  lg: 20,
+  xl: 28,
+  full: 9999,
+};
+
+export const globalStyles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    backgroundColor: COLORS.bg0,
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+  title: {
+    fontSize: 28,
+    fontWeight: FONTS.weight.extrabold,
+    color: COLORS.textPrimary,
+    letterSpacing: -0.5,
   },
-  web: {
-    sans: 'var(--font-display)',
-    serif: 'var(--font-serif)',
-    rounded: 'var(--font-rounded)',
-    mono: 'var(--font-mono)',
+  subtitle: {
+    fontSize: 16,
+    fontWeight: FONTS.weight.medium,
+    color: COLORS.textSecondary,
+    lineHeight: 24,
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: FONTS.weight.semibold,
+    color: COLORS.textMuted,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: SPACING.sm,
   },
 });
-
-export const Spacing = {
-  half: 2,
-  one: 4,
-  two: 8,
-  three: 16,
-  four: 24,
-  five: 32,
-  six: 64,
-} as const;
-
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
-export const MaxContentWidth = 800;
