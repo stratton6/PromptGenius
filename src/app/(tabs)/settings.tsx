@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CustomButton } from '../../components/CustomButton';
 import { GlassCard } from '../../components/GlassCard';
+import { ResponsiveWrapper } from '../../components/ResponsiveWrapper';
 import { COLORS, RADIUS, SPACING } from '../../constants/theme';
 import { useApiKey } from '../../hooks/useApiKey';
 import { validateApiKey } from '../../services/gemini';
@@ -38,10 +39,6 @@ export default function SettingsScreen() {
       setError('Please enter a new API key.');
       return;
     }
-    if (!trimmed.startsWith('AIza')) {
-      setError('Invalid key format. Gemini keys start with "AIza".');
-      return;
-    }
     setSaving(true);
     setError('');
     setSuccess('');
@@ -63,6 +60,16 @@ export default function SettingsScreen() {
   };
 
   const handleDelete = () => {
+    // If on web, Alert.alert doesn't always work as expected depending on setup, 
+    // but Expo handles it okay. A simple fallback:
+    if (Platform.OS === 'web') {
+      const confirm = window.confirm('This will log you out. Continue?');
+      if (confirm) {
+        clearKey().then(() => router.replace('/onboarding'));
+      }
+      return;
+    }
+
     Alert.alert(
       'Remove API Key',
       'This will log you out and take you back to the setup screen. Continue?',
@@ -82,156 +89,158 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <LinearGradient
-          colors={['rgba(124,58,237,0.1)', 'transparent']}
-          style={styles.headerGradient}
-        >
-          <View style={styles.header}>
-            <Text style={styles.badge}>⚙  SETTINGS</Text>
-            <Text style={styles.title}>Account &{'\n'}Configuration</Text>
-          </View>
-        </LinearGradient>
+      <ResponsiveWrapper>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <LinearGradient
+            colors={['rgba(124,58,237,0.1)', 'transparent']}
+            style={styles.headerGradient}
+          >
+            <View style={styles.header}>
+              <Text style={styles.badge}>⚙  SETTINGS</Text>
+              <Text style={styles.title}>Account &{'\n'}Configuration</Text>
+            </View>
+          </LinearGradient>
 
-        {/* API Key Card */}
-        <GlassCard gradient style={styles.keyCard}>
-          <View style={styles.keyRow}>
-            <View style={styles.keyIconWrap}>
-              <LinearGradient
-                colors={['#7C3AED', '#06B6D4']}
-                style={styles.keyIcon}
-              >
-                <Text style={{ fontSize: 20 }}>🔑</Text>
-              </LinearGradient>
+          {/* API Key Card */}
+          <GlassCard gradient style={styles.keyCard}>
+            <View style={styles.keyRow}>
+              <View style={styles.keyIconWrap}>
+                <LinearGradient
+                  colors={['#7C3AED', '#06B6D4']}
+                  style={styles.keyIcon}
+                >
+                  <Text style={{ fontSize: 20 }}>🔑</Text>
+                </LinearGradient>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.keyCardTitle}>Gemini API Key</Text>
+                <Text style={styles.maskedKey}>
+                  {apiKey ? maskKey(apiKey) : 'No key stored'}
+                </Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.keyCardTitle}>Gemini API Key</Text>
-              <Text style={styles.maskedKey}>
-                {apiKey ? maskKey(apiKey) : 'No key stored'}
-              </Text>
-            </View>
-          </View>
 
-          {!editing ? (
-            <View style={styles.keyActions}>
-              <CustomButton
-                title="✏  Update Key"
-                onPress={() => {
-                  setEditing(true);
-                  setSuccess('');
-                  setError('');
-                }}
-                variant="secondary"
-                style={{ flex: 1 }}
-              />
-              <CustomButton
-                title="Remove"
-                onPress={handleDelete}
-                variant="ghost"
-              />
-            </View>
-          ) : (
-            <View style={{ gap: SPACING.sm, marginTop: SPACING.md }}>
-              <TextInput
-                style={[styles.input, error ? styles.inputError : null]}
-                placeholder="Enter new API key..."
-                placeholderTextColor={COLORS.textMuted}
-                value={newKey}
-                onChangeText={(t) => {
-                  setNewKey(t);
-                  setError('');
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoFocus
-              />
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {!editing ? (
               <View style={styles.keyActions}>
                 <CustomButton
-                  title="Save"
-                  onPress={handleUpdate}
-                  loading={saving}
+                  title="✏  Update Key"
+                  onPress={() => {
+                    setEditing(true);
+                    setSuccess('');
+                    setError('');
+                  }}
+                  variant="secondary"
                   style={{ flex: 1 }}
                 />
                 <CustomButton
-                  title="Cancel"
+                  title="Remove"
+                  onPress={handleDelete}
                   variant="ghost"
-                  onPress={() => {
-                    setEditing(false);
-                    setNewKey('');
-                    setError('');
-                  }}
                 />
               </View>
+            ) : (
+              <View style={{ gap: SPACING.sm, marginTop: SPACING.md }}>
+                <TextInput
+                  style={[styles.input, error ? styles.inputError : null]}
+                  placeholder="Enter new API key..."
+                  placeholderTextColor={COLORS.textMuted}
+                  value={newKey}
+                  onChangeText={(t) => {
+                    setNewKey(t);
+                    setError('');
+                  }}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoFocus
+                />
+                {error ? <Text style={styles.errorText}>{error}</Text> : null}
+                <View style={styles.keyActions}>
+                  <CustomButton
+                    title="Save"
+                    onPress={handleUpdate}
+                    loading={saving}
+                    style={{ flex: 1 }}
+                  />
+                  <CustomButton
+                    title="Cancel"
+                    variant="ghost"
+                    onPress={() => {
+                      setEditing(false);
+                      setNewKey('');
+                      setError('');
+                    }}
+                  />
+                </View>
+              </View>
+            )}
+            {success ? (
+              <Text style={styles.successText}>✅ {success}</Text>
+            ) : null}
+          </GlassCard>
+
+          {/* App Info */}
+          <GlassCard style={styles.infoCard}>
+            <Text style={styles.infoTitle}>PromptGenius</Text>
+            <Text style={styles.infoVersion}>Version 2.0.0 · Web Ready</Text>
+            <View style={styles.divider} />
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Platform</Text>
+              <Text style={styles.infoValue}>{Platform.OS === 'web' ? '🌐 Web' : Platform.OS === 'ios' ? '🍎 iOS' : '🤖 Android'}</Text>
             </View>
-          )}
-          {success ? (
-            <Text style={styles.successText}>✅ {success}</Text>
-          ) : null}
-        </GlassCard>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>AI Model</Text>
+              <Text style={styles.infoValue}>Gemini 1.5 Flash</Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Storage</Text>
+              <Text style={styles.infoValue}>Local AsyncStorage</Text>
+            </View>
+          </GlassCard>
 
-        {/* App Info */}
-        <GlassCard style={styles.infoCard}>
-          <Text style={styles.infoTitle}>PromptGenius</Text>
-          <Text style={styles.infoVersion}>Version 1.0.0 · SDK 57</Text>
-          <View style={styles.divider} />
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Platform</Text>
-            <Text style={styles.infoValue}>{Platform.OS === 'ios' ? '🍎 iOS' : '🤖 Android'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>AI Model</Text>
-            <Text style={styles.infoValue}>Gemini 1.5 Flash</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Storage</Text>
-            <Text style={styles.infoValue}>Local AsyncStorage</Text>
-          </View>
-        </GlassCard>
+          {/* Links */}
+          <GlassCard style={styles.linksCard}>
+            <Text style={styles.linksTitle}>Resources</Text>
+            {[
+              {
+                label: 'Get / Manage API Keys',
+                url: 'https://aistudio.google.com/app/apikey',
+                icon: '🔑',
+              },
+              {
+                label: 'Gemini API Docs',
+                url: 'https://ai.google.dev/gemini-api/docs',
+                icon: '📖',
+              },
+              {
+                label: 'Source Code on GitHub',
+                url: 'https://github.com/stratton6/PromptGenius',
+                icon: '💻',
+              },
+            ].map((link) => (
+              <TouchableOpacity
+                key={link.url}
+                onPress={() => Linking.openURL(link.url)}
+                style={styles.linkRow}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.linkIcon}>{link.icon}</Text>
+                <Text style={styles.linkText}>{link.label}</Text>
+                <Text style={styles.linkArrow}>→</Text>
+              </TouchableOpacity>
+            ))}
+          </GlassCard>
 
-        {/* Links */}
-        <GlassCard style={styles.linksCard}>
-          <Text style={styles.linksTitle}>Resources</Text>
-          {[
-            {
-              label: 'Get / Manage API Keys',
-              url: 'https://aistudio.google.com/app/apikey',
-              icon: '🔑',
-            },
-            {
-              label: 'Gemini API Docs',
-              url: 'https://ai.google.dev/gemini-api/docs',
-              icon: '📖',
-            },
-            {
-              label: 'Source Code on GitHub',
-              url: 'https://github.com/stratton6/PromptGenius',
-              icon: '💻',
-            },
-          ].map((link) => (
-            <TouchableOpacity
-              key={link.url}
-              onPress={() => Linking.openURL(link.url)}
-              style={styles.linkRow}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.linkIcon}>{link.icon}</Text>
-              <Text style={styles.linkText}>{link.label}</Text>
-              <Text style={styles.linkArrow}>→</Text>
-            </TouchableOpacity>
-          ))}
-        </GlassCard>
-
-        {/* Privacy note */}
-        <GlassCard style={styles.privacyCard}>
-          <Text style={styles.privacyText}>
-            🔒 <Text style={{ fontWeight: '700', color: COLORS.success }}>Privacy First.</Text>{' '}
-            PromptGenius never transmits your API key to any external server. All AI requests are
-            made directly from your device to Google's Gemini API.
-          </Text>
-        </GlassCard>
-      </ScrollView>
+          {/* Privacy note */}
+          <GlassCard style={styles.privacyCard}>
+            <Text style={styles.privacyText}>
+              🔒 <Text style={{ fontWeight: '700', color: COLORS.success }}>Privacy First.</Text>{' '}
+              PromptGenius never transmits your API key to any external server. All AI requests are
+              made directly from your device to Google's Gemini API.
+            </Text>
+          </GlassCard>
+        </ScrollView>
+      </ResponsiveWrapper>
     </SafeAreaView>
   );
 }

@@ -31,6 +31,15 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          title: 'Explore',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="🏠" focused={focused} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="generate"
+        options={{
           title: 'Generator',
           tabBarIcon: ({ focused }) => (
             <TabIcon icon="✦" focused={focused} />

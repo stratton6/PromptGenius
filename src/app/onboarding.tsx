@@ -3,8 +3,8 @@ import { router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
+  Image,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -14,10 +14,12 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CustomButton } from '../components/CustomButton';
 import { GlassCard } from '../components/GlassCard';
+import { ResponsiveWrapper } from '../components/ResponsiveWrapper';
 import { COLORS, RADIUS, SPACING } from '../constants/theme';
 import { useApiKey } from '../hooks/useApiKey';
 import { validateApiKey } from '../services/gemini';
@@ -25,6 +27,9 @@ import { validateApiKey } from '../services/gemini';
 SplashScreen.preventAutoHideAsync();
 
 export default function OnboardingScreen() {
+  const { width } = useWindowDimensions();
+  const isWebLarge = Platform.OS === 'web' && width > 900;
+  
   const { setKey } = useApiKey();
   const [keyInput, setKeyInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -64,10 +69,6 @@ export default function OnboardingScreen() {
       setError('Please enter your API key.');
       return;
     }
-    if (!trimmed.startsWith('AIza')) {
-      setError('Gemini API keys typically start with "AIza". Please double-check.');
-      return;
-    }
     setLoading(true);
     setError('');
     try {
@@ -85,6 +86,89 @@ export default function OnboardingScreen() {
     }
   };
 
+  const formContent = (
+    <Animated.View
+      style={[
+        styles.formContainer,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+        isWebLarge && styles.formContainerWeb
+      ]}
+    >
+      {/* Logo / Badge */}
+      <View style={styles.logoBadge}>
+        <LinearGradient
+          colors={['#7C3AED', '#06B6D4']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoGradient}
+        >
+          <Text style={styles.logoEmoji}>✦</Text>
+        </LinearGradient>
+      </View>
+
+      {/* Heading */}
+      <Text style={[styles.heading, isWebLarge && { textAlign: 'left' }]}>
+        Welcome to{'\n'}PromptGenius
+      </Text>
+      <Text style={[styles.subheading, isWebLarge && { textAlign: 'left', maxWidth: '100%' }]}>
+        Your AI-powered prompt engineering & brand strategy assistant.
+        To get started, connect your free Gemini API key.
+      </Text>
+
+      {/* Input Card */}
+      <GlassCard style={styles.card}>
+        <Text style={styles.cardLabel}>GEMINI API KEY</Text>
+        <TextInput
+          style={[styles.input, error ? styles.inputError : null]}
+          placeholder="Paste your API Key here..."
+          placeholderTextColor={COLORS.textMuted}
+          value={keyInput}
+          onChangeText={(t) => {
+            setKeyInput(t);
+            setError('');
+          }}
+          autoCapitalize="none"
+          autoCorrect={false}
+          secureTextEntry={false}
+          returnKeyType="done"
+          onSubmitEditing={handleSave}
+        />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <CustomButton
+          title="Verify & Save Key"
+          onPress={handleSave}
+          loading={loading}
+          fullWidth
+          style={{ marginTop: SPACING.md }}
+        />
+      </GlassCard>
+
+      {/* Get Key Link */}
+      <TouchableOpacity
+        onPress={() =>
+          Linking.openURL('https://aistudio.google.com/app/apikey')
+        }
+        style={styles.linkRow}
+      >
+        <Text style={styles.linkText}>
+          🔑 Don't have a key? Get a free one from Google AI Studio →
+        </Text>
+      </TouchableOpacity>
+
+      {/* Privacy note */}
+      <GlassCard style={styles.privacyCard}>
+        <Text style={styles.privacyText}>
+          🔒 Your API key is stored only on this device using encrypted
+          local storage. It is never sent to any third-party server.
+        </Text>
+      </GlassCard>
+    </Animated.View>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient
@@ -97,94 +181,45 @@ export default function OnboardingScreen() {
       <Animated.View style={[styles.glowOrb1, { opacity: glowAnim }]} />
       <Animated.View style={[styles.glowOrb2, { opacity: glowAnim }]} />
 
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+      <ResponsiveWrapper maxWidth={1200}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <Animated.View
-            style={[
-              styles.content,
-              {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
-              },
+          <ScrollView
+            contentContainerStyle={[
+              styles.scrollContent,
+              isWebLarge && styles.scrollContentWeb
             ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            {/* Logo / Badge */}
-            <View style={styles.logoBadge}>
-              <LinearGradient
-                colors={['#7C3AED', '#06B6D4']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.logoGradient}
-              >
-                <Text style={styles.logoEmoji}>✦</Text>
-              </LinearGradient>
-            </View>
-
-            {/* Heading */}
-            <Text style={styles.heading}>Welcome to{'\n'}PromptGenius</Text>
-            <Text style={styles.subheading}>
-              Your AI-powered prompt engineering & brand strategy assistant.
-              To get started, connect your free Gemini API key.
-            </Text>
-
-            {/* Input Card */}
-            <GlassCard style={styles.card}>
-              <Text style={styles.cardLabel}>GEMINI API KEY</Text>
-              <TextInput
-                style={[styles.input, error ? styles.inputError : null]}
-                placeholder="AIzaSy..."
-                placeholderTextColor={COLORS.textMuted}
-                value={keyInput}
-                onChangeText={(t) => {
-                  setKeyInput(t);
-                  setError('');
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                secureTextEntry={false}
-                returnKeyType="done"
-                onSubmitEditing={handleSave}
-              />
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-              <CustomButton
-                title="Verify & Save Key"
-                onPress={handleSave}
-                loading={loading}
-                fullWidth
-                style={{ marginTop: SPACING.md }}
-              />
-            </GlassCard>
-
-            {/* Get Key Link */}
-            <TouchableOpacity
-              onPress={() =>
-                Linking.openURL('https://aistudio.google.com/app/apikey')
-              }
-              style={styles.linkRow}
-            >
-              <Text style={styles.linkText}>
-                🔑 Don't have a key? Get a free one from Google AI Studio →
-              </Text>
-            </TouchableOpacity>
-
-            {/* Privacy note */}
-            <GlassCard style={styles.privacyCard}>
-              <Text style={styles.privacyText}>
-                🔒 Your API key is stored only on this device using encrypted
-                local storage. It is never sent to any third-party server.
-              </Text>
-            </GlassCard>
-          </Animated.View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+            {isWebLarge ? (
+              <View style={styles.webSplitLayout}>
+                {/* Left Side: Illustration */}
+                <View style={styles.webImageContainer}>
+                  <Image 
+                    source={{ uri: 'https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1600&auto=format&fit=crop' }} 
+                    style={styles.webImage}
+                    resizeMode="cover"
+                  />
+                  <LinearGradient
+                    colors={['transparent', COLORS.bg0]}
+                    style={StyleSheet.absoluteFill}
+                  />
+                </View>
+                
+                {/* Right Side: Form */}
+                <View style={styles.webFormSide}>
+                  {formContent}
+                </View>
+              </View>
+            ) : (
+              formContent
+            )}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ResponsiveWrapper>
     </SafeAreaView>
   );
 }
@@ -196,7 +231,34 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: SPACING.lg,
   },
-  content: { alignItems: 'center', gap: SPACING.lg },
+  scrollContentWeb: {
+    padding: 0,
+  },
+  webSplitLayout: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  webImageContainer: {
+    flex: 1.2,
+    position: 'relative',
+    borderRightWidth: 1,
+    borderColor: COLORS.glassBorder,
+  },
+  webImage: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    opacity: 0.7,
+  },
+  webFormSide: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: SPACING.xxl * 1.5,
+  },
+  formContainer: { alignItems: 'center', gap: SPACING.lg },
+  formContainerWeb: { alignItems: 'flex-start' },
   glowOrb1: {
     position: 'absolute',
     width: 300,

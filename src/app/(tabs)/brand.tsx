@@ -8,47 +8,25 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CustomButton, LoadingSpinner } from '../../components/CustomButton';
 import { GlassCard } from '../../components/GlassCard';
+import { ResponsiveWrapper } from '../../components/ResponsiveWrapper';
 import { COLORS, RADIUS, SPACING } from '../../constants/theme';
 import { useApiKey } from '../../hooks/useApiKey';
-import { BrandStrategy, generateBrandStrategy } from '../../services/gemini';
+import { generateBrandStrategy, BrandStrategy } from '../../services/gemini';
 
-function SectionCard({
-  title,
-  emoji,
-  children,
-}: {
-  title: string;
-  emoji: string;
-  children: React.ReactNode;
-}) {
-  const [open, setOpen] = useState(true);
+function SectionCard({ title, emoji, children }: { title: string; emoji: string; children: React.ReactNode }) {
   return (
-    <GlassCard style={styles.sectionCard}>
-      <TouchableOpacity
-        onPress={() => setOpen((o) => !o)}
-        style={styles.sectionHeader}
-        activeOpacity={0.7}
-      >
+    <GlassCard gradient style={styles.sectionCard}>
+      <View style={styles.sectionHeader}>
         <Text style={styles.sectionEmoji}>{emoji}</Text>
         <Text style={styles.sectionTitle}>{title}</Text>
-        <Text style={styles.chevron}>{open ? '▲' : '▼'}</Text>
-      </TouchableOpacity>
-      {open ? <View style={styles.sectionBody}>{children}</View> : null}
+      </View>
+      <View style={styles.sectionContent}>{children}</View>
     </GlassCard>
-  );
-}
-
-function Tag({ text, color = COLORS.violetLight }: { text: string; color?: string }) {
-  return (
-    <View style={[styles.tag, { borderColor: color + '55', backgroundColor: color + '15' }]}>
-      <Text style={[styles.tagText, { color }]}>{text}</Text>
-    </View>
   );
 }
 
@@ -56,7 +34,7 @@ export default function BrandStrategyScreen() {
   const { apiKey } = useApiKey();
   const [brandName, setBrandName] = useState('');
   const [niche, setNiche] = useState('');
-  const [audience, setAudience] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
   const [strategy, setStrategy] = useState<BrandStrategy | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -64,23 +42,22 @@ export default function BrandStrategyScreen() {
 
   const handleGenerate = async () => {
     if (!brandName.trim() || !niche.trim()) {
-      setError('Brand name and niche are required.');
+      setError('Please fill out the required fields.');
       return;
     }
     if (!apiKey) return;
+
     setLoading(true);
     setError('');
     setStrategy(null);
-    resultAnim.setValue(0);
     try {
-      const result = await generateBrandStrategy(
-        brandName.trim(),
-        niche.trim(),
-        audience.trim() || 'General',
-        apiKey
-      );
-      setStrategy(result);
-      Animated.timing(resultAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+      const res = await generateBrandStrategy(brandName, niche, targetAudience, apiKey);
+      setStrategy(res);
+      Animated.timing(resultAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
     } catch (err: any) {
       setError(err?.message ?? 'Failed to generate strategy. Please try again.');
     } finally {
@@ -91,7 +68,7 @@ export default function BrandStrategyScreen() {
   const handleClear = () => {
     setBrandName('');
     setNiche('');
-    setAudience('');
+    setTargetAudience('');
     setStrategy(null);
     setError('');
     resultAnim.setValue(0);
@@ -99,147 +76,145 @@ export default function BrandStrategyScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
+      <ResponsiveWrapper>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
-          {/* Header */}
-          <LinearGradient
-            colors={['rgba(6,182,212,0.12)', 'transparent']}
-            style={styles.headerGradient}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            <View style={styles.header}>
-              <Text style={styles.badge}>◈  BRAND STRATEGY</Text>
-              <Text style={styles.title}>AI-Powered Brand{'\n'}Intelligence</Text>
-              <Text style={styles.subtitle}>
-                Enter your brand details to receive a full strategic brief: persona, hooks, and audience insights.
-              </Text>
-            </View>
-          </LinearGradient>
+            {/* Header */}
+            <LinearGradient
+              colors={['rgba(6,182,212,0.15)', 'transparent']}
+              style={styles.headerGradient}
+            >
+              <View style={styles.header}>
+                <Text style={styles.badge}>◈  BRAND STRATEGY</Text>
+                <Text style={styles.title}>Define Your{'\n'}Digital Identity</Text>
+              </View>
+            </LinearGradient>
 
-          {/* Form */}
-          <GlassCard style={styles.formCard}>
-            <Text style={styles.fieldLabel}>BRAND NAME *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. NovaMind"
-              placeholderTextColor={COLORS.textMuted}
-              value={brandName}
-              onChangeText={(t) => { setBrandName(t); setError(''); }}
-            />
+            {/* Input Form */}
+            <GlassCard style={styles.formCard}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>BRAND NAME *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. Acme Corp"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={brandName}
+                  onChangeText={setBrandName}
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>NICHE / INDUSTRY *</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="e.g. B2B Productivity Software"
+                  placeholderTextColor={COLORS.textMuted}
+                  value={niche}
+                  onChangeText={setNiche}
+                />
+              </View>
 
-            <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>NICHE / INDUSTRY *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. AI Productivity Tools for Remote Teams"
-              placeholderTextColor={COLORS.textMuted}
-              value={niche}
-              onChangeText={(t) => { setNiche(t); setError(''); }}
-            />
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>TARGET AUDIENCE</Text>
+                <TextInput
+                  style={[styles.input, { height: 80 }]}
+                  placeholder="e.g. Remote teams looking to save time on meetings..."
+                  placeholderTextColor={COLORS.textMuted}
+                  value={targetAudience}
+                  onChangeText={setTargetAudience}
+                  multiline
+                />
+              </View>
 
-            <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>TARGET AUDIENCE (optional)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="e.g. Remote workers, 25-40, tech-savvy"
-              placeholderTextColor={COLORS.textMuted}
-              value={audience}
-              onChangeText={setAudience}
-            />
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+              <View style={styles.actionRow}>
+                {strategy ? (
+                  <CustomButton
+                    title="Clear"
+                    variant="ghost"
+                    onPress={handleClear}
+                  />
+                ) : null}
+                <CustomButton
+                  title={loading ? 'Analyzing...' : '◈  Generate Strategy'}
+                  onPress={handleGenerate}
+                  loading={loading}
+                  disabled={!brandName.trim() || !niche.trim()}
+                  fullWidth={!strategy}
+                  style={{ flex: strategy ? 1 : undefined }}
+                />
+              </View>
+            </GlassCard>
 
-            <View style={styles.actionRow}>
-              {strategy ? (
-                <CustomButton title="Reset" variant="ghost" onPress={handleClear} />
-              ) : null}
-              <CustomButton
-                title={loading ? 'Analyzing...' : '◈  Build Strategy'}
-                onPress={handleGenerate}
-                loading={loading}
-                disabled={!brandName.trim() || !niche.trim()}
-                fullWidth={!strategy}
-                style={{ flex: strategy ? 1 : undefined }}
-              />
-            </View>
-          </GlassCard>
+            {loading && !strategy ? <LoadingSpinner label="AI is crafting your brand persona..." /> : null}
 
-          {loading ? <LoadingSpinner label="Building your brand brief..." /> : null}
-
-          {strategy ? (
-            <Animated.View style={{ opacity: resultAnim, gap: SPACING.md }}>
-              {/* Brand Persona */}
-              <SectionCard title="Brand Persona & Tone" emoji="🎭">
-                <View style={styles.personaRow}>
-                  <View style={styles.personaItem}>
-                    <Text style={styles.personaKey}>Archetype</Text>
-                    <Text style={styles.personaValue}>{strategy.persona.archetype}</Text>
-                  </View>
-                  <View style={styles.personaItem}>
-                    <Text style={styles.personaKey}>Tone</Text>
-                    <Text style={styles.personaValue}>{strategy.persona.tone}</Text>
-                  </View>
-                </View>
-                <Text style={styles.personaKey}>Personality Traits</Text>
-                <View style={styles.tagRow}>
-                  {strategy.persona.personality.map((t) => (
-                    <Tag key={t} text={t} color={COLORS.violetLight} />
-                  ))}
-                </View>
-                <Text style={[styles.personaKey, { marginTop: SPACING.sm }]}>Brand Values</Text>
-                <View style={styles.tagRow}>
-                  {strategy.persona.values.map((v) => (
-                    <Tag key={v} text={v} color={COLORS.cyanLight} />
-                  ))}
-                </View>
-              </SectionCard>
-
-              {/* Marketing Hooks */}
-              <SectionCard title="Marketing Hooks" emoji="🎯">
-                {strategy.hooks.map((hook, i) => (
-                  <View key={i} style={styles.hookCard}>
-                    <View style={styles.hookType}>
-                      <Text style={styles.hookTypeText}>{hook.type}</Text>
+            {strategy ? (
+              <Animated.View style={{ opacity: resultAnim, gap: SPACING.md, marginTop: SPACING.sm }}>
+                {/* Brand Persona */}
+                <SectionCard title="Brand Persona" emoji="🎭">
+                  <View style={styles.personaRow}>
+                    <View style={styles.personaItem}>
+                      <Text style={styles.personaKey}>Archetype</Text>
+                      <Text style={styles.personaValue}>{strategy.persona?.archetype}</Text>
                     </View>
-                    <Text style={styles.hookHeadline}>{hook.headline}</Text>
-                    <Text style={styles.hookSubtext}>{hook.subtext}</Text>
+                    <View style={styles.personaItem}>
+                      <Text style={styles.personaKey}>Tone</Text>
+                      <Text style={styles.personaValue}>{strategy.persona?.tone}</Text>
+                    </View>
                   </View>
-                ))}
-              </SectionCard>
+                  <View style={styles.badgeList}>
+                    {strategy.persona?.personality?.map((p, i) => (
+                      <View key={i} style={styles.badgeItem}>
+                        <Text style={styles.badgeItemText}>{p}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </SectionCard>
 
-              {/* Audience */}
-              <SectionCard title="Audience Deep-Dive" emoji="👥">
-                <Text style={styles.personaKey}>Demographics</Text>
-                <Text style={styles.audienceText}>{strategy.audience.demographics}</Text>
-
-                <Text style={[styles.personaKey, { marginTop: SPACING.sm }]}>Psychographics</Text>
-                <Text style={styles.audienceText}>{strategy.audience.psychographics}</Text>
-
-                <Text style={[styles.personaKey, { marginTop: SPACING.sm }]}>Pain Points</Text>
-                {strategy.audience.painPoints.map((p, i) => (
-                  <Text key={i} style={styles.bulletItem}>• {p}</Text>
-                ))}
-
-                <Text style={[styles.personaKey, { marginTop: SPACING.sm }]}>Desired Outcomes</Text>
-                {strategy.audience.desiredOutcomes.map((o, i) => (
-                  <Text key={i} style={styles.bulletItem}>✓ {o}</Text>
-                ))}
-
-                <Text style={[styles.personaKey, { marginTop: SPACING.sm }]}>Best Platforms</Text>
-                <View style={styles.tagRow}>
-                  {strategy.audience.platforms.map((p) => (
-                    <Tag key={p} text={p} color={COLORS.success} />
+                {/* Audience Insight */}
+                <SectionCard title="Audience Insights" emoji="👥">
+                  <Text style={styles.insightText}>
+                    <Text style={styles.insightBold}>Demographics:</Text> {strategy.audience?.demographics}
+                  </Text>
+                  <Text style={styles.insightText}>
+                    <Text style={styles.insightBold}>Psychographics:</Text> {strategy.audience?.psychographics}
+                  </Text>
+                  
+                  <Text style={[styles.insightBold, { marginTop: SPACING.sm }]}>Pain Points</Text>
+                  {strategy.audience?.painPoints?.map((p, i) => (
+                    <Text key={i} style={styles.listItem}>• {p}</Text>
                   ))}
-                </View>
-              </SectionCard>
-            </Animated.View>
-          ) : null}
-        </ScrollView>
-      </KeyboardAvoidingView>
+
+                  <Text style={[styles.insightBold, { marginTop: SPACING.sm }]}>Core Desires</Text>
+                  {strategy.audience?.desiredOutcomes?.map((p, i) => (
+                    <Text key={i} style={styles.listItem}>• {p}</Text>
+                  ))}
+                </SectionCard>
+
+                {/* Marketing Hooks */}
+                <SectionCard title="Marketing Hooks" emoji="🎣">
+                  {strategy.hooks?.map((h, i) => (
+                    <View key={i} style={styles.hookItem}>
+                      <Text style={styles.hookType}>{h.type?.toUpperCase()}</Text>
+                      <Text style={styles.hookHeadline}>"{h.headline}"</Text>
+                      <Text style={styles.hookSubtext}>{h.subtext}</Text>
+                    </View>
+                  ))}
+                </SectionCard>
+              </Animated.View>
+            ) : null}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ResponsiveWrapper>
     </SafeAreaView>
   );
 }
@@ -247,7 +222,7 @@ export default function BrandStrategyScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg0 },
   scrollContent: { padding: SPACING.lg, gap: SPACING.md, paddingBottom: SPACING.xxl },
-  headerGradient: { borderRadius: RADIUS.lg, marginBottom: SPACING.sm },
+  headerGradient: { borderRadius: RADIUS.lg, marginBottom: SPACING.xs },
   header: { padding: SPACING.md },
   badge: {
     fontSize: 11,
@@ -262,16 +237,14 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     letterSpacing: -0.5,
     lineHeight: 36,
-    marginBottom: SPACING.sm,
   },
-  subtitle: { fontSize: 14, color: COLORS.textSecondary, lineHeight: 22 },
-  formCard: {},
-  fieldLabel: {
+  formCard: { gap: SPACING.md },
+  inputGroup: { gap: SPACING.xs },
+  inputLabel: {
     fontSize: 11,
     fontWeight: '700',
     color: COLORS.textMuted,
     letterSpacing: 1.5,
-    marginBottom: SPACING.xs,
   },
   input: {
     backgroundColor: COLORS.bg2,
@@ -282,65 +255,30 @@ const styles = StyleSheet.create({
     padding: 14,
     fontSize: 15,
   },
-  errorText: { color: COLORS.error, fontSize: 13, marginTop: SPACING.xs },
+  errorText: { color: COLORS.error, fontSize: 13 },
   actionRow: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    marginTop: SPACING.md,
     alignItems: 'center',
+    marginTop: SPACING.xs,
   },
-  sectionCard: { gap: 0 },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-  },
+  sectionCard: {},
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: SPACING.sm, borderBottomWidth: 1, borderBottomColor: COLORS.glassBorder, paddingBottom: SPACING.sm, marginBottom: SPACING.md },
   sectionEmoji: { fontSize: 20 },
-  sectionTitle: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-  },
-  chevron: { color: COLORS.textMuted, fontSize: 12 },
-  sectionBody: { marginTop: SPACING.md, gap: SPACING.sm },
-  personaRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.sm },
-  personaItem: { flex: 1, gap: 4 },
-  personaKey: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: COLORS.textMuted,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-  },
-  personaValue: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '600' },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.xs, marginTop: 4 },
-  tag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: RADIUS.full,
-    borderWidth: 1,
-  },
-  tagText: { fontSize: 12, fontWeight: '600' },
-  hookCard: {
-    backgroundColor: COLORS.bg2,
-    borderRadius: RADIUS.md,
-    padding: SPACING.md,
-    gap: 6,
-    borderWidth: 1,
-    borderColor: COLORS.glassBorder,
-  },
-  hookType: {
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.violetGlow,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: RADIUS.full,
-  },
-  hookTypeText: { color: COLORS.violetLight, fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
-  hookHeadline: { color: COLORS.textPrimary, fontSize: 15, fontWeight: '700', lineHeight: 22 },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: COLORS.textPrimary },
+  sectionContent: {},
+  personaRow: { flexDirection: 'row', gap: SPACING.md, marginBottom: SPACING.md },
+  personaItem: { flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', padding: SPACING.sm, borderRadius: RADIUS.sm },
+  personaKey: { color: COLORS.textMuted, fontSize: 11, fontWeight: '700', marginBottom: 2, textTransform: 'uppercase' },
+  personaValue: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '600' },
+  badgeList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  badgeItem: { backgroundColor: COLORS.violetGlow, paddingHorizontal: 10, paddingVertical: 4, borderRadius: RADIUS.full, borderWidth: 1, borderColor: COLORS.violetLight },
+  badgeItemText: { color: COLORS.violetLight, fontSize: 12, fontWeight: '600' },
+  insightText: { color: COLORS.textSecondary, fontSize: 14, lineHeight: 22, marginBottom: SPACING.xs },
+  insightBold: { color: COLORS.textPrimary, fontWeight: '700' },
+  listItem: { color: COLORS.textSecondary, fontSize: 14, marginLeft: SPACING.sm, lineHeight: 22 },
+  hookItem: { marginBottom: SPACING.md },
+  hookType: { color: COLORS.cyanLight, fontSize: 10, fontWeight: '800', letterSpacing: 1, marginBottom: 4 },
+  hookHeadline: { color: COLORS.textPrimary, fontSize: 16, fontWeight: '700', marginBottom: 4 },
   hookSubtext: { color: COLORS.textSecondary, fontSize: 13, lineHeight: 20 },
-  audienceText: { color: COLORS.textPrimary, fontSize: 14, lineHeight: 22 },
-  bulletItem: { color: COLORS.textSecondary, fontSize: 14, lineHeight: 22 },
 });
