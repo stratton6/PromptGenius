@@ -29,7 +29,9 @@ export function ApiKeyProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     AsyncStorage.getItem(API_KEY_STORAGE)
-      .then((stored) => setApiKey(stored))
+      .then((stored) => {
+        setApiKey(stored);
+      })
       .finally(() => setIsLoading(false));
   }, []);
 

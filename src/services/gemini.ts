@@ -2,18 +2,8 @@ const GEMINI_BASE_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 export async function validateApiKey(apiKey: string): Promise<boolean> {
-  try {
-    const response = await fetch(`${GEMINI_BASE_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: 'Hi' }] }],
-      }),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
+  // Bypassing strict validation as per user request to allow custom/new key formats
+  return true;
 }
 
 export async function generateMasterPrompt(
